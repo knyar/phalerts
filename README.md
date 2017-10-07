@@ -1,3 +1,6 @@
+[![Build Status](https://secure.travis-ci.org/knyar/phalerts.svg?branch=master)](http://travis-ci.org/knyar/phalerts?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/knyar/phalerts/badge.svg?branch=master)](https://coveralls.io/github/knyar/phalerts?branch=master)
+
 ## Phabricator webhook for Prometheus Alertmanager
 
 `phalerts` is a simple service that implements
