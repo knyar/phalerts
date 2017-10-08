@@ -1,0 +1,5 @@
+[MESSAGES CONTROL]
+# missing-docstring: because pylint wants a docstring for EVERYTHING :)
+# invalid-name: because pylint keeps thinking our global variables are constants
+#               and should be named all-capital.
+disable=missing-docstring,invalid-name

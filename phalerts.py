@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Creates and updates Phabricator / Maniphest tasks for Prometheus alerts.
 
-This is a basic daemon that implements Prometheus alertmanager webhook API and
-creates/updates Maniphest tasks for alerts.
+phalerts implements Prometheus alertmanager webhook API and creates/updates
+Phabricator tasks for alerts. Inspired by https://github.com/fabxc/jiralerts
 
-Inspired by https://github.com/fabxc/jiralerts
+https://github.com/knyar/phalerts
+Licensed under MIT license.
 """
 
 import argparse
@@ -47,12 +48,11 @@ TPL_DESCRIPTION = r"""
 
 {% endfor %}
 """
-
-metric_request_latency = prometheus.Histogram(
+metric_request_latency = prometheus.Histogram(  # pylint: disable=no-value-for-parameter
     "phalerts_request_latency_seconds", "Latency of incoming requests")
-metric_error_count = prometheus.Counter(
+metric_error_count = prometheus.Counter(  # pylint: disable=no-value-for-parameter
     "phalerts_request_errors_total", "Number of request processing errors")
-metric_phabricator_latency = prometheus.Histogram(
+metric_phabricator_latency = prometheus.Histogram(  # pylint: disable=no-value-for-parameter
     "phalerts_phabricator_latency_seconds",
     "Latency of outgoing Phabricator requests", ["api_call"])
 
@@ -62,7 +62,7 @@ class Error(RuntimeError):
 def phab_request(api_func, **kwargs):
     """Sends a Phabricator API request, measuring latency and logging result."""
     api_call = "%s.%s" % (api_func.method, api_func.endpoint)
-    with metric_phabricator_latency.labels(api_call).time():
+    with metric_phabricator_latency.labels(api_call).time():  # pylint: disable=no-member
         result = api_func(**kwargs)
         logging.debug("Got %s response: %s", api_call, result)
         return result
@@ -223,8 +223,8 @@ def metrics():
     return resp, 200
 
 def main():
-    global args
-    global phab
+    global args  # pylint: disable=global-statement
+    global phab  # pylint: disable=global-statement
     parser = argparse.ArgumentParser(
         description="Creates and updates Maniphest tasks for alerts",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
