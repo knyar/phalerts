@@ -107,7 +107,7 @@ def create_task(title, description, projects):
     result = phab_request(phab.maniphest.edit, transactions=transactions)
     if not result["object"]:
         raise Error("Failed to create task. Got response: %s" % result)
-    logging.info("Created task %s/T%s", args.phabricator_url.rstrip('/'),
+    logging.info("Created task %s/T%s", args.phabricator_url.rstrip("/"),
                  result["object"]["id"])
 
 def update_task(task, description):
@@ -182,10 +182,10 @@ def process_task(title, description, projects):
         create_task(title, description, projects)
     elif task["fields"]["description"]["raw"] == description:
         logging.info("Task %s/T%s already exists with correct description",
-                     args.phabricator_url.rstrip('/'), task["id"])
+                     args.phabricator_url.rstrip("/"), task["id"])
     else:
         logging.info("Updating task %s/T%s",
-                     args.phabricator_url.rstrip('/'), task["id"])
+                     args.phabricator_url.rstrip("/"), task["id"])
         update_task(task, description)
 
 @app.route("/alerts", methods=["POST"])
@@ -254,7 +254,7 @@ def main():
         print("PHABRICATOR_TOKEN not set")
         sys.exit(1)
 
-    phab = Phabricator(host="%s/api/" % args.phabricator_url.rstrip('/'),
+    phab = Phabricator(host="%s/api/" % args.phabricator_url.rstrip("/"),
                        username=args.phabricator_user, token=token)
     app.run(host=args.bind, port=args.port)
 
