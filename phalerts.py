@@ -77,6 +77,9 @@ def find_project_phid(name):
         name: (string) name of a project.
     """
     result = phab_request(phab.project.search, constraints=dict(name=name))
+    if result["cursor"]["after"]:
+        raise Error("Unexpected 'after' cursor while searching for project %s" %
+                    name)
     for project in result["data"]:
         # For the list of fields, see:
         # https://secure.phabricator.com/conduit/method/project.search/
@@ -152,6 +155,9 @@ def find_task(title, projects):
         # multiple open tasks exist.
         order="title",
     )
+    if result["cursor"]["after"]:
+        raise Error("Unexpected 'after' cursor while searching for task %s" %
+                    title)
     for task in result["data"]:
         # 'fulltext' constraint actually does a full text search, so we iterate
         # over returned tasks looking for a one with the title we need.

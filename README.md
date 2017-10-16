@@ -45,6 +45,15 @@ receivers:
 
 Finally, actually route some alerts to the receiver you've created.
 
+## Known issues
+
+Search queries issued to Phabricator only process first 100 results. This is
+unlikely to be a problem (especially for small installations), however you might
+need to implement paging support in `phalerts` if you have many projects or
+open tasks with similar names. You should see `phalerts_request_errors_total`
+counter incremented and "Unexpected 'after' cursor" error messages if this
+becomes a problem.
+
 ## License
 
 Licensed under MIT license.
