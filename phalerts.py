@@ -48,6 +48,7 @@ TPL_DESCRIPTION = r"""
 
 {% endfor %}
 """
+
 metric_request_latency = prometheus.Histogram(  # pylint: disable=no-value-for-parameter
     "phalerts_request_latency_seconds", "Latency of incoming requests")
 metric_error_count = prometheus.Counter(  # pylint: disable=no-value-for-parameter
@@ -108,7 +109,7 @@ def create_task(title, description, projects):
         project_phids = [find_project_phid(n) for n in projects]
         transactions.append(dict(type="projects.add", value=project_phids))
     result = phab_request(phab.maniphest.edit, transactions=transactions)
-    if not result["object"]:
+    if not result.get("object"):
         raise Error("Failed to create task. Got response: %s" % result)
     logging.info("Created task %s/T%s", args.phabricator_url.rstrip("/"),
                  result["object"]["id"])
@@ -119,7 +120,7 @@ def update_task(task, description):
     Args:
         task: a nested dictionary corresponding to an existing Maniphest task
             (as returned by `find_task`).
-        description: (string) new task rescription.
+        description: (string) new task description.
     """
     transactions = [dict(type="description", value=description)]
     result = phab_request(
@@ -131,7 +132,7 @@ def update_task(task, description):
             task["phid"], result))
 
 def find_task(title, projects):
-    """Looks for an open task with a given title in a given project.
+    """Looks for an open task with a given title in given projects.
 
     Returns a single matched task. For the list of fields, see:
     https://secure.phabricator.com/conduit/method/maniphest.search/
@@ -139,7 +140,7 @@ def find_task(title, projects):
     Args:
         title: (string) task title.
         projects: (list of strings) names of projects that should be assigned to
-            a task to be returned.
+            a task to be returned. Can be empty.
     """
     project_phids = set([find_project_phid(n) for n in projects])
 
@@ -172,7 +173,8 @@ def find_task(title, projects):
 def process_task(title, description, projects):
     """Makes sure there is a task with a given title and description.
 
-    Either creates or updates an existing task with a given description.
+    Either creates or updates an existing task with a given description. Note,
+    that only tasks that belong to a given set of projects will be considered.
 
     Args:
         title: (string) task title.
