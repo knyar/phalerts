@@ -34,7 +34,7 @@ TPL_DESCRIPTION = r"""
 {% endfor %}
 
 == Firing alerts
-{% for a in alerts|sort(attribute='startsAt') if a.status == 'firing' -%}
+{% for a in alerts if a.status == 'firing' -%}
 
 ---
 
