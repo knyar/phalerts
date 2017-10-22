@@ -26,7 +26,8 @@ You will need to create a
 which will be used to manage alert-based tasks and generate an API token via
 `[Bot User] > Manage > Edit Settings > Conduit API Tokens`.
 
-Run `phalerts` like this:
+`phalerts` expects the token to be present in `PHABRICATOR_TOKEN` environment
+variable, so you'll typically use a command like this to start it:
 
 ```
 PHABRICATOR_TOKEN=api-xxxxxx phalerts.py https://phab.company.tld bot-username
