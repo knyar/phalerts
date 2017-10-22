@@ -212,6 +212,13 @@ def alerts():
 
     logging.debug("Got data: %s", data)
 
+    # Sort list of alerts by label values to make sure that task description
+    # stays the same when Alertmanager sends the same list of alerts in a
+    # different order.
+    if "alerts" in data:
+        data["alerts"] = sorted(data["alerts"],
+                                key=lambda a: sorted(a["labels"].values()))
+
     title = Template(args.tpl_title).render(data)
     description = Template(TPL_DESCRIPTION).render(data)
 
