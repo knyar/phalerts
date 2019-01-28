@@ -142,12 +142,12 @@ def find_task(title, projects):
         projects: (list of strings) names of projects that should be assigned to
             a task to be returned. Can be empty.
     """
-    project_phids = set([find_project_phid(n) for n in projects])
+    project_phids = {find_project_phid(n) for n in projects}
 
     result = phab_request(
         phab.maniphest.search,
         constraints=dict(
-            fulltext=title,
+            query='title:"%s"' % title,
             statuses=["open"],
             projects=projects,
         ),
@@ -160,7 +160,7 @@ def find_task(title, projects):
         raise Error("Unexpected 'after' cursor while searching for task %s" %
                     title)
     for task in result["data"]:
-        # 'fulltext' constraint actually does a full text search, so we iterate
+        # 'query' constraint actually does a full text search, so we iterate
         # over returned tasks looking for a one with the title we need.
         if task["fields"]["name"] != title:
             continue
