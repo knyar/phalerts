@@ -149,7 +149,7 @@ def find_task(title, projects):
         constraints=dict(
             query='title:"%s"' % title,
             statuses=["open"],
-            projects=projects,
+            projects=list(project_phids),
         ),
         attachments=dict(projects=True),
         # this expands to "title, id", so we'll get the newest open task if
@@ -168,6 +168,7 @@ def find_task(title, projects):
         # Check that the task has all required projects assigned to it.
         if not project_phids.issubset(task_projects):
             continue
+
         return task
 
 def process_task(title, description, projects):
