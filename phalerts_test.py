@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# https://github.com/knyar/phalerts
+# Licensed under MIT license.
+# Copyright 2017 Contributors to the phalerts project.
+
 import copy
 import unittest
 import unittest.mock

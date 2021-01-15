@@ -6,6 +6,8 @@ Phabricator tasks for alerts. Inspired by https://github.com/fabxc/jiralerts
 
 https://github.com/knyar/phalerts
 Licensed under MIT license.
+
+Copyright 2017 Contributors to the phalerts project.
 """
 
 import argparse
