@@ -90,7 +90,7 @@ def find_project_phid(name):
             return project["phid"]
     raise Error("Could not find project %s" % name)
 
-def create_task(title, description, projects):
+def create_task(title, description, phids):
     """Creates a Maniphest task.
 
     Tasks are created by using `maniphest.edit` API endpoint without an
@@ -100,16 +100,15 @@ def create_task(title, description, projects):
     Args:
         title: (string) task title.
         description: (string) task description.
-        projects: (list of strings) names of projects that a new task should be
+        phids: (list of strings) project IDs that a new task should be
             assigned to.
     """
     transactions = [
         dict(type="title", value=title),
         dict(type="description", value=description),
     ]
-    if projects:
-        project_phids = [find_project_phid(n) for n in projects]
-        transactions.append(dict(type="projects.add", value=project_phids))
+    if phids:
+        transactions.append(dict(type="projects.add", value=phids))
     result = phab_request(phab.maniphest.edit, transactions=transactions)
     if not result.get("object"):
         raise Error("Failed to create task. Got response: %s" % result)
@@ -133,25 +132,23 @@ def update_task(task, description):
         raise Error("Failed to apply all transactions for task %s. Got %s" % (
             task["phid"], result))
 
-def find_task(title, projects):
-    """Looks for an open task with a given title in given projects.
+def find_task(title, phids):
+    """Looks for an open task with a given title in given project IDs.
 
     Returns a single matched task. For the list of fields, see:
     https://secure.phabricator.com/conduit/method/maniphest.search/
 
     Args:
         title: (string) task title.
-        projects: (list of strings) names of projects that should be assigned to
+        phids: (list of strings) project IDs that should be assigned to
             a task to be returned. Can be empty.
     """
-    project_phids = {find_project_phid(n) for n in projects}
-
     result = phab_request(
         phab.maniphest.search,
         constraints=dict(
             query='title:"%s"' % title,
             statuses=["open"],
-            projects=list(project_phids),
+            projects=phids,
         ),
         attachments=dict(projects=True),
         # this expands to "title, id", so we'll get the newest open task if
@@ -168,29 +165,38 @@ def find_task(title, projects):
             continue
         task_projects = set(task["attachments"]["projects"]["projectPHIDs"])
         # Check that the task has all required projects assigned to it.
-        if not project_phids.issubset(task_projects):
+        if not set(phids).issubset(task_projects):
             continue
 
         return task
 
-def process_task(title, description, projects):
+def process_task(title, description, projects, phids):
     """Makes sure there is a task with a given title and description.
 
     Either creates or updates an existing task with a given description. Note,
-    that only tasks that belong to a given set of projects will be considered.
+    that only tasks that belong to a given set of projects or PHIDs will be
+    considered.
 
     Args:
         title: (string) task title.
         description: (string) task description.
         projects: (list of strings) names of projects that a task should be
             assigned to.
+        phids: (list of strings) projects IDs that a task should be
+            assigned to.
     """
-    logging.info("Looking for tasks with title='%s' in %s", title, projects)
-    task = find_task(title, projects)
+    for project in projects:
+        phid = find_project_phid(project)
+        logging.info("Project %s has PHID %s", project, phid)
+        phids.append(phid)
+
+    logging.info("Looking for tasks with title='%s' in %s", title, phids)
+
+    task = find_task(title, phids)
 
     if not task:
-        logging.info("Creating a task with title='%s' in %s", title, projects)
-        create_task(title, description, projects)
+        logging.info("Creating a task with title='%s' in %s", title, phids)
+        create_task(title, description, phids)
     elif task["fields"]["description"]["raw"] == description:
         logging.info("Task %s/T%s already exists with correct description",
                      args.phabricator_url.rstrip("/"), task["id"])
@@ -203,7 +209,7 @@ def process_task(title, description, projects):
 @metric_request_latency.time()
 def alerts():
     """Processes a POST request from Alertmanager."""
-    unknown_args = set(request.args.keys()) - {"project"}
+    unknown_args = set(request.args.keys()) - {"project", "phid"}
     if unknown_args:
         logging.error("Unexpected args %s", unknown_args)
         return "Unexpected args %s" % unknown_args, 400
@@ -226,7 +232,8 @@ def alerts():
     description = Template(TPL_DESCRIPTION).render(data)
 
     try:
-        process_task(title, description, request.args.getlist("project"))
+        process_task(title, description, request.args.getlist("project"),
+                     request.args.getlist("phid"))
     except Error as e:
         logging.error("Got error: %s", e)
         metric_error_count.inc()

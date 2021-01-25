@@ -15,7 +15,7 @@ The service:
   if necessary;
 * if there is no open task, created a new one.
 
-You can optionally provide a project name (or several) and `phalerts` will only
+You can optionally provide a project name/ID (or several) and `phalerts` will only
 look for tasks in that project, and will assign that project to all new tasks it
 creates.
 
@@ -43,6 +43,9 @@ receivers:
   - url: http://localhost:8292/alerts?project=prometheus-alerts
     send_resolved: false
 ```
+
+At each call the Phabricator ID (`PHID`) for `prometheus-alerts` will be looked
+up. Specifying IDs is also supported via the `phid` query string parameter.
 
 Finally, actually route some alerts to the receiver you've created.
 
