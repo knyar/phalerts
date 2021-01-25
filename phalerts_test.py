@@ -145,47 +145,60 @@ class TestPhalerts(unittest.TestCase):
         # no projects
         self.post(MSG_ONE_ALERT)
         process_task.assert_called_with(
-            "title SomethingIsBroken", "desc SomethingIsBroken", [])
+            "title SomethingIsBroken", "desc SomethingIsBroken", [], [])
         # a single project
         self.post(MSG_ONE_ALERT, "project=foobar")
         process_task.assert_called_with(
-            "title SomethingIsBroken", "desc SomethingIsBroken", ["foobar"])
+            "title SomethingIsBroken", "desc SomethingIsBroken", ["foobar"], [])
         # multiple projects
         self.post(MSG_ONE_ALERT, "project=foo&project=bar")
         process_task.assert_called_with(
-            "title SomethingIsBroken", "desc SomethingIsBroken", ["foo", "bar"])
+            "title SomethingIsBroken", "desc SomethingIsBroken", ["foo", "bar"], [])
+        # a single phid
+        self.post(MSG_ONE_ALERT, "phid=foobar")
+        process_task.assert_called_with(
+            "title SomethingIsBroken", "desc SomethingIsBroken", [], ["foobar"])
+        # multiple phids
+        self.post(MSG_ONE_ALERT, "phid=foo&phid=bar")
+        process_task.assert_called_with(
+            "title SomethingIsBroken", "desc SomethingIsBroken", [], ["foo", "bar"])
+        # mix phid/project
+        self.post(MSG_ONE_ALERT, "project=foo&phid=bar")
+        process_task.assert_called_with(
+            "title SomethingIsBroken", "desc SomethingIsBroken", ["foo"], ["bar"])
 
     def test_nonexistent_project(self):
         result = copy.deepcopy(PROJECT_SEARCH_RESULT)
         result["data"] = []
         self.phab.project.search.return_value = result
         with self.assertRaises(phalerts.Error) as cm:
-            phalerts.process_task("title", "desc", ["foobar"])
+            phalerts.process_task("title", "desc", ["foobar"], [])
         self.assertIn("Could not find project foobar", str(cm.exception))
 
     @parameterized.parameterized.expand([
         # Task already exists, and has correct project assigned.
-        ("title SomethingIsBroken", "desc SomethingIsBroken", ["foobar"]),
+        ("title SomethingIsBroken", "desc SomethingIsBroken", ["foobar"], []),
         # Task already exists, and has two projects assigned (including the
         # expected one).
         ("title SomethingIsBroken some other text", "task description is here",
-         ["foobar"]),
+         ["foobar"], []),
     ])
-    def test_task_exists_and_not_changed(self, title, description, projects):
-        phalerts.process_task(title, description, projects)
+    def test_task_exists_and_not_changed(self, title, description, projects,
+                                         phids):
+        phalerts.process_task(title, description, projects, phids)
         self.phab.project.search.assert_called_once()
         self.phab.maniphest.search.assert_called_once()
         # No tasks should have been created or edited.
         self.phab.maniphest.edit.assert_not_called()
 
     @parameterized.parameterized.expand([
-        ("title SomethingIsBroken", "new description", ["foobar"]),
+        ("title SomethingIsBroken", "new description", ["foobar"], []),
         ("title SomethingIsBroken some other text", "new description",
-         ["foobar", "foobar-extra"]),
+         ["foobar", "foobar-extra"], []),
     ])
-    def test_task_exists_and_changed(self, title, description, projects):
+    def test_task_exists_and_changed(self, title, description, projects, phids):
         """Test that a task will be changed if description is different."""
-        phalerts.process_task(title, description, projects)
+        phalerts.process_task(title, description, projects, phids)
         self.phab.project.search.assert_called()
         self.phab.maniphest.search.assert_called_once()
         # Ensure that the task has been edited (rather than created, which uses
@@ -196,13 +209,13 @@ class TestPhalerts(unittest.TestCase):
 
     @parameterized.parameterized.expand([
         # No task with such title.
-        ("title SomethingElseIsBroken", "desc SomethingIsBroken", ["foobar"]),
+        ("title SomethingElseIsBroken", "desc SomethingIsBroken", ["foobar"], []),
         # Project is different.
-        ("title SomethingIsBroken", "desc SomethingIsBroken", ["foobar-extra"]),
+        ("title SomethingIsBroken", "desc SomethingIsBroken", ["foobar-extra"], []),
     ])
-    def test_task_created(self, title, description, projects):
+    def test_task_created(self, title, description, projects, phids):
         """Test that a new task is created."""
-        phalerts.process_task(title, description, projects)
+        phalerts.process_task(title, description, projects, phids)
         self.phab.project.search.assert_called()
         self.phab.maniphest.search.assert_called_once()
         # Ensure that the task is created.
@@ -213,7 +226,7 @@ class TestPhalerts(unittest.TestCase):
     def test_task_creation_failed(self):
         self.phab.maniphest.edit.return_value = {}
         with self.assertRaises(phalerts.Error):
-            phalerts.process_task("new title", "new description", [])
+            phalerts.process_task("new title", "new description", [], [])
 
 
 if __name__ == "__main__":
