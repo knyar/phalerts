@@ -49,6 +49,12 @@ up. Specifying IDs is also supported via the `phid` query string parameter.
 
 Finally, actually route some alerts to the receiver you've created.
 
+### Title template
+
+Tasks created by `phalerts` will be titled by a jinja template, by default the
+alert group's name (`--tpl_format` CLI option). You can override the title
+template with the `title` query string parameter.
+
 ## Known issues
 
 Search queries issued to Phabricator only process first 100 results. This is

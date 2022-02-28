@@ -166,6 +166,14 @@ class TestPhalerts(unittest.TestCase):
         self.post(MSG_ONE_ALERT, "project=foo&phid=bar")
         process_task.assert_called_with(
             "title SomethingIsBroken", "desc SomethingIsBroken", ["foo"], ["bar"])
+        # string title with no template
+        self.post(MSG_ONE_ALERT, "title=notemplate")
+        process_task.assert_called_with(
+            "notemplate", "desc SomethingIsBroken", [], [])
+        # templated title
+        self.post(MSG_ONE_ALERT, "title=status {{ alerts[0].status }}")
+        process_task.assert_called_with(
+            "status firing", "desc SomethingIsBroken", [], [])
 
     def test_nonexistent_project(self):
         result = copy.deepcopy(PROJECT_SEARCH_RESULT)
