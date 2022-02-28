@@ -16,7 +16,7 @@ import os
 import sys
 
 from flask import Flask, request, make_response
-from jinja2 import Template
+from jinja2 import Template, TemplateError
 from phabricator import Phabricator
 import prometheus_client as prometheus
 
@@ -209,7 +209,7 @@ def process_task(title, description, projects, phids):
 @metric_request_latency.time()
 def alerts():
     """Processes a POST request from Alertmanager."""
-    unknown_args = set(request.args.keys()) - {"project", "phid"}
+    unknown_args = set(request.args.keys()) - {"project", "phid", "title"}
     if unknown_args:
         logging.error("Unexpected args %s", unknown_args)
         return "Unexpected args %s" % unknown_args, 400
@@ -228,7 +228,15 @@ def alerts():
         data["alerts"] = sorted(data["alerts"],
                                 key=lambda a: sorted(a["labels"].values()))
 
-    title = Template(args.tpl_title).render(data)
+    tpl = args.tpl_title
+    if "title" in request.args:
+        tpl = request.args["title"]
+
+    try:
+        title = Template(tpl).render(data)
+    except TemplateError as e:
+        logging.error("Unable to format title %s", e)
+        return "Unable to format title template %s" % e, 400
     description = Template(TPL_DESCRIPTION).render(data)
 
     try:
@@ -259,7 +267,8 @@ def main():
         "-b", "--bind", default="localhost", help="Host to bind to")
     parser.add_argument(
         "-t", "--tpl_title", default="{{ groupLabels.alertname }}",
-        help="Jinja2 template used for task title")
+        help="Jinja2 template used for task title. Will be overridden "
+             "by 'title' in query string")
     parser.add_argument(
         "-d", "--debug", action="store_const", dest="loglevel",
         const=logging.DEBUG, default=logging.INFO, help="Enable debug logging")
