@@ -251,7 +251,7 @@ def alerts():
 
 @app.route("/metrics")
 def metrics():
-    resp = make_response(prometheus.generate_latest(prometheus.core.REGISTRY))
+    resp = make_response(prometheus.generate_latest(prometheus.REGISTRY))
     resp.headers["Content-Type"] = prometheus.CONTENT_TYPE_LATEST
     return resp, 200
 
